@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Twitch</title>
+  <style>
+    #status, #error {
+      position: absolute;
+      top: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-size: 14px;
+      display: none;
+      z-index: 10;
+    }
+    #player {
+      display: none;
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 1;
+    }
+  </style>
+</head>
+<body>
+  <div id="status">Connecting to WebSocket...</div>
+  <div id="error"></div>
+  <video id="player" src="/cached_clip.mp4"></video>
+
+  <script>
+    let socket;
+    let reconnectInterval = 5000;
+    let statusTimeout
+    const player = document.getElementById("player");
+
+    function connectWebSocket() {
+      socket = new WebSocket("ws://localhost:8765");
+
+      socket.onopen = () => {
+        console.log("Connected to the server");
+        showStatus("Connected to WebSocket", false);
+      };
+
+      socket.onmessage = (event) => {
+        console.log("Received message from server:", event.data);
+        try {
+          const data = JSON.parse(event.data);
+          console.log("Parsed data:", data);
+          if (data.command === "play_clip") {
+            playClip();
+            showStatus(data.payload);
+          } else if (data.command === "error") {
+            showStatus(data.payload, true);
+          } else if (data.command === "volume") {
+            console.log("Setting volume to:", data.payload / 100);
+            player.volume = data.payload / 100;
+            console.log("Volume set to:", player.volume);
+            showStatus(`vol: ${data.payload}`);
+          } else if (data.command === "info") {
+            showStatus(data.payload);
+          } else if (data.command === "skip_clip") {
+            player.style.display = "none";
+            player.pause();
+            socket.send(JSON.stringify({ command: "clip_finished" }));
+          } else {
+            console.warn("Unknown command:", data.command);
+            socket.send(JSON.stringify({ command: "clip_finished" }));
+          }
+
+        } catch (error) {
+          console.error("Error parsing message from server:", error);
+          socket.send(JSON.stringify({ command: "clip_finished" }));
+        }
+      };
+
+      socket.onerror = (error) => {
+        console.error("WebSocket Error:", error);
+        showStatus("WebSocket Error", true);
+      };
+
+      socket.onclose = (event) => {
+        console.log("Disconnected from the server", event);
+        showStatus("Disconnected from WebSocket. Reconnecting...", true);
+        setTimeout(connectWebSocket, reconnectInterval);
+      };
+    }
+
+    function showStatus(message = "hello world", isError = false) {
+
+      if (statusTimeout) {
+        clearTimeout(statusTimeout);
+      }
+
+      const statusDiv = document.getElementById("status");
+      statusDiv.textContent = message;
+      statusDiv.style.display = "block";
+      statusDiv.style.backgroundColor = isError ? "rgba(255, 0, 0, 0.8)" : "rgba(0, 0, 0, 0.8)";
+      statusTimeout = setTimeout(() => {
+        statusDiv.style.display = "none";
+      }, 5000);
+    }
+
+    function playClip() {
+      player.style.display = "block";
+      player.currentTime = 0;
+      player.muted = false;
+      player.playbackRate = 1.0;
+      const uniqueSrc = `/cached_clip.mp4?timestamp=${new Date().getTime()}`; // Add a unique timestamp
+      player.src = uniqueSrc;
+      player.load();
+      player.play().catch((error) => {
+        console.error("Error playing clip:", error);
+        showStatus("Failed to play clip.", true);
+        player.style.display = "none";
+      });
+
+      player.onended = () => {
+        player.style.display = "none";
+        // Send a message to the server when the clip finishes playing
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify({ command: "clip_finished" }));
+          console.log("Sent 'clip_finished' message to the server.");
+        }
+      };
+
+      player.onerror = (error) => {
+        console.error("Error in video player:", error);
+        socket.send(JSON.stringify({ command: "clip_finished" }));
+        player.style.display = "none";
+      };
+    }
+
+    connectWebSocket();
+  </script>
+</body>
+</html>
