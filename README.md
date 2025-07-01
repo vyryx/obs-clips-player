@@ -3,7 +3,7 @@ to get your API credentials.
 
 ![Twitch Console](./resources/registerApp.png)  
 
-![Twitch Console](./resources/registe.png)  
+![Twitch Console](./resources/register.png)  
 
 ![Twitch Console](./resources/createApp.png)  
 
