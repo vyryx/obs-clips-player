@@ -7,6 +7,8 @@
 
 ---
 
+Firstly download this (as a `.zip`) and extract it, place that folder somewhere on your PC where you can find it - this is now called your _working directory_
+
 ### Step 1: Get API Credentials
 Head to [Twitch Developer Console](https://dev.twitch.tv/console) to register your application and obtain API credentials.
 
@@ -16,10 +18,12 @@ Head to [Twitch Developer Console](https://dev.twitch.tv/console) to register yo
 
 As the OAuth Redirect URL, you can use `http://localhost`.
 
+during this you will get your `client_id` and `client_secret` (its called secret because its intended to be kept **secret**) - make sure to copy both of these
+
 ---
 
 ### Step 2: Configure `resources.ini`
-Make changes to the `resources.ini` file to fit your needs. Add the `client_id` and `client_secret` (required for fetching clips). Ensure the directory paths follow the format `C:/Users/...`.
+Make changes to the `resources.ini` file to fit your needs. Add the `client_id` and `client_secret` (required for fetching clips). Ensure the directory paths follow the format `C:/Users/...`. (use Forward Slash)
 
 ---
 
@@ -36,7 +40,7 @@ Run `launch.py` to install dependencies and launch the application. After the in
 ### Troubleshooting
 #### Clips Not Downloading
 If clips fail to download, ensure `twitch-dl` is working properly:
-1. Navigate to your working directory using `cd C:/Users/...` (replace with the actual path).
+1. Navigate to your _working directory_ using `cd C:/Users/...` (replace with the actual path).
 2. Activate the virtual environment by running:
    ```
    .venv\Scripts\activate
